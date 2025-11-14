@@ -5,6 +5,9 @@ import pandas as pd
 import joblib
 import seaborn as sns
 import matplotlib.pyplot as plt
+from streamlit_folium import st_folium
+import folium
+
 
 # === 1. LOAD MODEL DAN DATA ===
 model = joblib.load("model_loreg.pkl")
@@ -53,6 +56,36 @@ sns.scatterplot(
 plt.title("Distribusi Cluster Berdasarkan Persentase Akses Internet")
 st.pyplot(plt)
 
+# === 4b. MAP INTERAKTIF ===
+st.header("🗺️ Peta Persebaran Akses Internet (Interaktif)")
+
+# Pastikan ada kolom koordinat
+if {'Latitude', 'Longitude'}.issubset(df.columns):
+    m = folium.Map(location=[-2.5, 118], zoom_start=5)
+
+    for _, row in df.iterrows():
+        color = "green" if row['cluster'] == 0 else "red"
+        popup_text = f"""
+        <b>Provinsi:</b> {row['Provinsi']}<br>
+        <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
+        <b>Cluster:</b> {'Baik' if row['cluster']==0 else 'Tertinggal'}
+        """
+
+        folium.CircleMarker(
+            location=[row['Latitude'], row['Longitude']],
+            radius=7,
+            color=color,
+            fill=True,
+            fill_color=color,
+            popup=popup_text,
+            tooltip=row['Provinsi']
+        ).add_to(m)
+
+    st_folium(m, width=900, height=500)
+else:
+    st.warning("Dataset utama belum memiliki kolom Latitude & Longitude untuk memvisualisasikan peta.")
+
+
 # === 5. PREDIKSI LOGISTIC REGRESSION (versi baru) ===
 st.header("🤖 Prediksi Menggunakan Logistic Regression")
 
@@ -77,12 +110,12 @@ if st.button("🔮 Prediksi Cluster"):
         if proporsi >= 90:
             prediction = 0  # Baik
             prob = 1.0
-            st.success(f"✅ Wilayah diprediksi **BAIK** (di atas 90%) — Probabilitas: {prob:.2f}")
+            st.success(f"✅ Wilayah diprediksi **BAIK** — Probabilitas: {prob:.2f}")
             st.markdown("🌐 *Insight:* Wilayah ini sudah memiliki infrastruktur digital yang cukup baik untuk mendukung pembelajaran daring.")
         else:
             prediction = 1  # Tertinggal
             prob = 1.0
-            st.error(f"🚨 Wilayah diprediksi **TERTINGGAL** (di bawah 90%) — Probabilitas: {prob:.2f}")
+            st.error(f"🚨 Wilayah diprediksi **TERTINGGAL** — Probabilitas: {prob:.2f}")
             st.markdown("💡 *Rekomendasi:* Perlu peningkatan infrastruktur jaringan internet dan pelatihan TIK untuk sekolah di wilayah ini.")
 
 # === 6. UPLOAD DATASET UNTUK PREDIKSI MASSAL ===
@@ -122,12 +155,39 @@ if uploaded_file is not None:
 
             st.dataframe(new_df[['Provinsi', 'Persentase_Tersedia', 'Prediksi_Cluster', 'Probabilitas']].head(10))
 
-            # Visualisasi hasil
+            # Visualisasi hasil (Diagram)
             st.subheader("📊 Distribusi Prediksi per Provinsi")
             fig, ax = plt.subplots(figsize=(10, 6))
             sns.barplot(data=new_df, x='Provinsi', y='Persentase_Tersedia', hue='Prediksi_Cluster', palette='coolwarm', ax=ax)
             plt.xticks(rotation=90)
             st.pyplot(fig)
+
+            # Visualisasi hasil (Map)
+            st.subheader("🗺️ Peta Persebaran Prediksi (Interaktif)")
+            
+            if {'Latitude', 'Longitude'}.issubset(new_df.columns):
+                m2 = folium.Map(location=[-2.5, 118], zoom_start=5)
+            
+                for _, row in new_df.iterrows():
+                    color = "green" if row['Prediksi_Cluster'] == 0 else "red"
+                    popup_text = f"""
+                    <b>Provinsi:</b> {row['Provinsi']}<br>
+                    <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
+                    <b>Hasil Prediksi:</b> {'Baik' if row['Prediksi_Cluster']==0 else 'Tertinggal'}
+                    <br><b>Probabilitas:</b> {row['Probabilitas']:.2f}
+                    """
+            
+                    folium.Marker(
+                        location=[row['Latitude'], row['Longitude']],
+                        popup=popup_text,
+                        tooltip=row['Provinsi'],
+                        icon=folium.Icon(color="green" if row['Prediksi_Cluster']==0 else "red")
+                    ).add_to(m2)
+            
+                st_folium(m2, width=900, height=500)
+            else:
+                st.warning("Dataset upload belum memiliki kolom Latitude & Longitude sehingga peta tidak dapat ditampilkan.")
+
 
             # Unduh hasil
             csv = new_df.to_csv(index=False).encode('utf-8')
