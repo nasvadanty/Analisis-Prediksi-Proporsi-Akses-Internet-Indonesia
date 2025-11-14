@@ -18,10 +18,10 @@ provinsi_coords = {
     "Lampung": (-4.558, 105.406),
     "Kep. Bangka Belitung", "Kepulauan Bangka Belitung", "K. Bangka Belitung": (-2.741, 106.440),
     "Kepulauan Riau", "Kep. Riau", "K. Riau": (3.945, 108.142),
-    "DKI Jakarta", "D.K.I. Jakarta": (-6.2088, 106.8456),
+    "DKI Jakarta", "D.K.I. Jakarta", "Jakarta": (-6.2088, 106.8456),
     "Jawa Barat", "Jabar": (-6.889, 107.640),
     "Jawa Tengah", "Jateng": (-7.150, 110.140),
-    "DI Yogyakarta", "D.I. Yogyakarta": (-7.797, 110.370),
+    "DI Yogyakarta", "D.I. Yogyakarta"' "Yogyakarta", "Jogja", "Jogjakarta": (-7.797, 110.370),
     "Jawa Timur", "Jatim": (-7.536, 112.238),
     "Banten": (-6.405, 106.064),
     "Bali": (-8.340, 115.092),
@@ -122,11 +122,20 @@ if {'Latitude', 'Longitude'}.issubset(df.columns):
     m = folium.Map(location=[-2.5, 118], zoom_start=5)
 
     for _, row in map_df_main.iterrows():
-        color = "green" if row['Cluster_Rule'] == 0 else "red"
+        # Tentukan kategori berdasarkan persentase
+        if row['Persentase_Tersedia'] >= 90:
+            kategori = "Baik"
+            color = "green"
+            cluster_val = 0
+        else:
+            kategori = "Tertinggal"
+            color = "red"
+            cluster_val = 1
+    
         popup_text = f"""
         <b>Provinsi:</b> {row['Provinsi']}<br>
         <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
-        <b>Cluster:</b> {'Baik' if row['Cluster_Rule']==0 else 'Tertinggal'}
+        <b>Cluster:</b> {kategori} ({cluster_val})
         """
 
         folium.CircleMarker(
@@ -165,15 +174,27 @@ if st.button("🔮 Prediksi Cluster"):
         proporsi = (internet_schools / total_schools) * 100
         st.info(f"📊 Persentase Akses Internet Sekolah: **{proporsi:.2f}%**")
 
-        # RULE-BASED CLUSTERING (90% menjadi batasnya)
-        if proporsi >= 90:
+        # RULE-BASED CLUSTERING (90% threshold)
+        threshold = 90
+        
+        # Hitung proporsi
+        proporsi = (internet_schools / total_schools) * 100
+        st.info(f"📊 Persentase Akses Internet Sekolah: **{proporsi:.2f}%**")
+        
+        # Hitung probabilitas berbasis jarak ke threshold
+        distance = abs(proporsi - threshold)
+        
+        # Normalisasi jarak (maks 90)
+        prob = min(0.50 + (distance / 90) * 0.49, 0.99)
+        prob = round(prob, 2)
+        
+        # Prediksi kategori
+        if proporsi >= threshold:
             prediction = 0  # Baik
-            prob = 1.0
             st.success(f"✅ Wilayah diprediksi **BAIK** — Probabilitas: {prob:.2f}")
             st.markdown("🌐 *Insight:* Wilayah ini sudah memiliki infrastruktur digital yang cukup baik untuk mendukung pembelajaran daring.")
         else:
             prediction = 1  # Tertinggal
-            prob = 1.0
             st.error(f"🚨 Wilayah diprediksi **TERTINGGAL** — Probabilitas: {prob:.2f}")
             st.markdown("💡 *Rekomendasi:* Perlu peningkatan infrastruktur jaringan internet dan pelatihan TIK untuk sekolah di wilayah ini.")
 
@@ -251,15 +272,23 @@ if uploaded_file is not None:
                 else:
                     m2 = folium.Map(location=[-2.5, 118], zoom_start=5)
             
-                    for _, row in map_df.iterrows():
-                        color = "green" if row['Prediksi_Cluster'] == 0 else "red"
+                    for _, row in map_df_main.iterrows():
+                        # Tentukan kategori berdasarkan persentase
+                        if row['Persentase_Tersedia'] >= 90:
+                            kategori = "Baik"
+                            color = "green"
+                            cluster_val = 0
+                        else:
+                            kategori = "Tertinggal"
+                            color = "red"
+                            cluster_val = 1
+                    
                         popup_text = f"""
                         <b>Provinsi:</b> {row['Provinsi']}<br>
                         <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
-                        <b>Hasil Prediksi:</b> {'Baik' if row['Prediksi_Cluster']==0 else 'Tertinggal'}<br>
-                        <b>Probabilitas:</b> {row['Probabilitas']:.2f}
+                        <b>Cluster:</b> {kategori} ({cluster_val})
                         """
-            
+                        
                         folium.Marker(
                             location=[row['Latitude'], row['Longitude']],
                             popup=popup_text,
