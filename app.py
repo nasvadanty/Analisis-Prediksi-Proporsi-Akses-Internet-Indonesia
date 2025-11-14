@@ -66,11 +66,10 @@ coord_df.rename(columns={'index': 'Provinsi'}, inplace=True)
 # Merge berdasarkan nama provinsi
 df = df.merge(coord_df, on='Provinsi', how='left')
 
-# Buat kolom baru 'Cluster_Rule' untuk menjamin arti konsisten:
+# Rule-based cluster untuk df utama
+df['Persentase_Tersedia'] = pd.to_numeric(df['Persentase_Tersedia'], errors='coerce')
 df['Cluster_Rule'] = df['Persentase_Tersedia'].apply(lambda x: 0 if pd.notna(x) and x >= 90 else 1)
-# Label teks untuk tampil
 df['Cluster_Label'] = df['Cluster_Rule'].map({0: 'Baik', 1: 'Tertinggal'})
-
 
 # TAMPILKAN DATA AWAL
 st.header("📊 Dataset Awal")
@@ -222,10 +221,10 @@ if uploaded_file is not None:
 
             st.dataframe(new_df[['Provinsi', 'Persentase_Tersedia', 'Prediksi_Cluster', 'Probabilitas']].head(10))
 
-            # Jika ingin rule-based (konsisten):
+            # Rule-based prediction untuk new_df
+            new_df['Persentase_Tersedia'] = pd.to_numeric(new_df['Persentase_Tersedia'], errors='coerce')
             new_df['Prediksi_Cluster_Rule'] = new_df['Persentase_Tersedia'].apply(lambda x: 0 if pd.notna(x) and x >= 90 else 1)
             new_df['Prediksi_Label'] = new_df['Prediksi_Cluster_Rule'].map({0: 'Baik', 1: 'Tertinggal'})
-
 
             # Visualisasi hasil (Diagram)
             st.subheader("📊 Distribusi Prediksi per Provinsi")
