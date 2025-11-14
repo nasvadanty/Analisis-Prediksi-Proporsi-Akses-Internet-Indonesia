@@ -9,35 +9,35 @@ import folium
 # Tabel Koordinat Provinsi Indonesia
 provinsi_coords = {
     "Aceh": (-3.644, 96.225),
-    "Sumatera Utara": (2.115, 99.545),
-    "Sumatera Barat": (-0.739, 100.800),
+    "Sumatera Utara", "Sumut": (2.115, 99.545),
+    "Sumatera Barat", "Sumbar": (-0.739, 100.800),
     "Riau": (0.293, 101.707),
     "Jambi": (-1.485, 102.438),
-    "Sumatera Selatan": (-3.319, 103.914),
+    "Sumatera Selatan", "Sumsel": (-3.319, 103.914),
     "Bengkulu": (-3.792, 102.260),
     "Lampung": (-4.558, 105.406),
-    "Kepulauan Bangka Belitung": (-2.741, 106.440),
-    "Kepulauan Riau": (3.945, 108.142),
-    "DKI Jakarta": (-6.2088, 106.8456),
-    "Jawa Barat": (-6.889, 107.640),
-    "Jawa Tengah": (-7.150, 110.140),
-    "DI Yogyakarta": (-7.797, 110.370),
-    "Jawa Timur": (-7.536, 112.238),
+    "Kep. Bangka Belitung", "Kepulauan Bangka Belitung", "K. Bangka Belitung": (-2.741, 106.440),
+    "Kepulauan Riau", "Kep. Riau", "K. Riau": (3.945, 108.142),
+    "DKI Jakarta", "D.K.I. Jakarta": (-6.2088, 106.8456),
+    "Jawa Barat", "Jabar": (-6.889, 107.640),
+    "Jawa Tengah", "Jateng": (-7.150, 110.140),
+    "DI Yogyakarta", "D.I. Yogyakarta": (-7.797, 110.370),
+    "Jawa Timur", "Jatim": (-7.536, 112.238),
     "Banten": (-6.405, 106.064),
     "Bali": (-8.340, 115.092),
-    "Nusa Tenggara Barat": (-8.653, 117.361),
-    "Nusa Tenggara Timur": (-10.177, 123.593),
-    "Kalimantan Barat": (-0.278, 109.335),
-    "Kalimantan Tengah": (-1.681, 113.382),
-    "Kalimantan Selatan": (-3.319, 114.592),
-    "Kalimantan Timur": (0.538, 116.419),
-    "Kalimantan Utara": (3.020, 116.207),
-    "Sulawesi Utara": (1.474, 124.842),
-    "Sulawesi Tengah": (-1.430, 121.445),
-    "Sulawesi Selatan": (-5.147, 119.432),
+    "Nusa Tenggara Barat", "NTB": (-8.653, 117.361),
+    "Nusa Tenggara Timur", "NTT": (-10.177, 123.593),
+    "Kalimantan Barat", "Kalbar": (-0.278, 109.335),
+    "Kalimantan Tengah", "Kalteng": (-1.681, 113.382),
+    "Kalimantan Selatan", "Kalsel": (-3.319, 114.592),
+    "Kalimantan Timur", "Kaltim": (0.538, 116.419),
+    "Kalimantan Utara", "Kaltara": (3.020, 116.207),
+    "Sulawesi Utara", "Sulut", "Sultara": (1.474, 124.842),
+    "Sulawesi Tengah", "Sulteng": (-1.430, 121.445),
+    "Sulawesi Selatan", "Sulsel": (-5.147, 119.432),
     "Sulawesi Tenggara": (-4.013, 122.529),
     "Gorontalo": (0.699, 122.446),
-    "Sulawesi Barat": (-2.844, 118.876),
+    "Sulawesi Barat", "Sulbar": (-2.844, 118.876),
     "Maluku": (-3.238, 130.145),
     "Maluku Utara": (1.570, 127.808),
     "Papua Barat": (-1.336, 133.174),
@@ -65,6 +65,11 @@ coord_df.rename(columns={'index': 'Provinsi'}, inplace=True)
 
 # Merge berdasarkan nama provinsi
 df = df.merge(coord_df, on='Provinsi', how='left')
+
+# Buat kolom baru 'Cluster_Rule' untuk menjamin arti konsisten:
+df['Cluster_Rule'] = df['Persentase_Tersedia'].apply(lambda x: 0 if pd.notna(x) and x >= 90 else 1)
+# Label teks untuk tampil
+df['Cluster_Label'] = df['Cluster_Rule'].map({0: 'Baik', 1: 'Tertinggal'})
 
 
 # TAMPILKAN DATA AWAL
@@ -118,11 +123,11 @@ if {'Latitude', 'Longitude'}.issubset(df.columns):
     m = folium.Map(location=[-2.5, 118], zoom_start=5)
 
     for _, row in map_df_main.iterrows():
-        color = "green" if row['cluster'] == 0 else "red"
+        color = "green" if row['Cluster_Rule'] == 0 else "red"
         popup_text = f"""
         <b>Provinsi:</b> {row['Provinsi']}<br>
         <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
-        <b>Cluster:</b> {'Baik' if row['cluster']==0 else 'Tertinggal'}
+        <b>Cluster:</b> {'Baik' if row['Cluster_Rule']==0 else 'Tertinggal'}
         """
 
         folium.CircleMarker(
@@ -216,6 +221,11 @@ if uploaded_file is not None:
             new_df['Probabilitas'] = model.predict_proba(scaled).max(axis=1)
 
             st.dataframe(new_df[['Provinsi', 'Persentase_Tersedia', 'Prediksi_Cluster', 'Probabilitas']].head(10))
+
+            # Jika ingin rule-based (konsisten):
+            new_df['Prediksi_Cluster_Rule'] = new_df['Persentase_Tersedia'].apply(lambda x: 0 if pd.notna(x) and x >= 90 else 1)
+            new_df['Prediksi_Label'] = new_df['Prediksi_Cluster_Rule'].map({0: 'Baik', 1: 'Tertinggal'})
+
 
             # Visualisasi hasil (Diagram)
             st.subheader("📊 Distribusi Prediksi per Provinsi")
