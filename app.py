@@ -218,28 +218,40 @@ if uploaded_file is not None:
             st.subheader("🗺️ Peta Persebaran Prediksi (Interaktif)")
             
             if {'Latitude', 'Longitude'}.issubset(new_df.columns):
-                m2 = folium.Map(location=[-2.5, 118], zoom_start=5)
             
-                for _, row in new_df.iterrows():
-                    color = "green" if row['Prediksi_Cluster'] == 0 else "red"
-                    popup_text = f"""
-                    <b>Provinsi:</b> {row['Provinsi']}<br>
-                    <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
-                    <b>Hasil Prediksi:</b> {'Baik' if row['Prediksi_Cluster']==0 else 'Tertinggal'}
-                    <br><b>Probabilitas:</b> {row['Probabilitas']:.2f}
-                    """
+                # Filter hanya baris dengan koordinat valid
+                map_df = new_df.dropna(subset=['Latitude', 'Longitude'])
             
-                    folium.Marker(
-                        location=[row['Latitude'], row['Longitude']],
-                        popup=popup_text,
-                        tooltip=row['Provinsi'],
-                        icon=folium.Icon(color="green" if row['Prediksi_Cluster']==0 else "red")
-                    ).add_to(m2)
+                # Peringatan jika ada provinsi tidak punya koordinat
+                missing_coords = new_df[new_df['Latitude'].isna()]['Provinsi'].unique()
+                if len(missing_coords) > 0:
+                    st.warning(f"Provinsi berikut tidak memiliki koordinat sehingga tidak muncul di peta: {missing_coords}")
             
-                st_folium(m2, width=900, height=500)
+                if map_df.empty:
+                    st.error("❌ Tidak ada baris dengan koordinat valid untuk ditampilkan di peta.")
+                else:
+                    m2 = folium.Map(location=[-2.5, 118], zoom_start=5)
+            
+                    for _, row in map_df.iterrows():
+                        color = "green" if row['Prediksi_Cluster'] == 0 else "red"
+                        popup_text = f"""
+                        <b>Provinsi:</b> {row['Provinsi']}<br>
+                        <b>Persentase Akses Internet:</b> {row['Persentase_Tersedia']:.2f}%<br>
+                        <b>Hasil Prediksi:</b> {'Baik' if row['Prediksi_Cluster']==0 else 'Tertinggal'}<br>
+                        <b>Probabilitas:</b> {row['Probabilitas']:.2f}
+                        """
+            
+                        folium.Marker(
+                            location=[row['Latitude'], row['Longitude']],
+                            popup=popup_text,
+                            tooltip=row['Provinsi'],
+                            icon=folium.Icon(color="green" if row['Prediksi_Cluster']==0 else "red")
+                        ).add_to(m2)
+            
+                    st_folium(m2, width=900, height=500)
+            
             else:
                 st.warning("Dataset upload belum memiliki kolom Latitude & Longitude sehingga peta tidak dapat ditampilkan.")
-
 
             # Unduh hasil
             csv = new_df.to_csv(index=False).encode('utf-8')
