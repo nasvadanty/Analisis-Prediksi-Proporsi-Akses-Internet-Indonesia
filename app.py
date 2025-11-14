@@ -104,11 +104,20 @@ st.pyplot(plt)
 # MAP INTERAKTIF
 st.header("🗺️ Peta Persebaran Akses Internet (Interaktif)")
 
-# Pastikan ada kolom koordinat
 if {'Latitude', 'Longitude'}.issubset(df.columns):
+
+    # Tampilkan provinsi yang hilang koordinat (debug)
+    missing_main = df[df['Latitude'].isna()]['Provinsi'].unique()
+    if len(missing_main) > 0:
+        st.warning(f"Provinsi berikut tidak memiliki koordinat dan tidak ditampilkan di peta: {missing_main}")
+
+    # Drop provinsi tanpa koordinat agar tidak error Folium
+    map_df_main = df.dropna(subset=['Latitude', 'Longitude'])
+
+    # Buat map
     m = folium.Map(location=[-2.5, 118], zoom_start=5)
 
-    for _, row in df.iterrows():
+    for _, row in map_df_main.iterrows():
         color = "green" if row['cluster'] == 0 else "red"
         popup_text = f"""
         <b>Provinsi:</b> {row['Provinsi']}<br>
@@ -127,6 +136,7 @@ if {'Latitude', 'Longitude'}.issubset(df.columns):
         ).add_to(m)
 
     st_folium(m, width=900, height=500)
+
 else:
     st.warning("Dataset utama belum memiliki kolom Latitude & Longitude untuk memvisualisasikan peta.")
 
