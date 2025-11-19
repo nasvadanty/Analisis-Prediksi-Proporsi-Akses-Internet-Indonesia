@@ -21,7 +21,7 @@ provinsi_coords = {
     "DKI Jakarta", "D.K.I. Jakarta", "Jakarta": (-6.2088, 106.8456),
     "Jawa Barat", "Jabar": (-6.889, 107.640),
     "Jawa Tengah", "Jateng": (-7.150, 110.140),
-    "DI Yogyakarta", "D.I. Yogyakarta"' "Yogyakarta", "Jogja", "Jogjakarta": (-7.797, 110.370),
+    "DI Yogyakarta", "D.I. Yogyakarta" "Yogyakarta", "Jogja", "Jogjakarta": (-7.797, 110.370),
     "Jawa Timur", "Jatim": (-7.536, 112.238),
     "Banten": (-6.405, 106.064),
     "Bali": (-8.340, 115.092),
