@@ -17,9 +17,6 @@ Dashboard interaktif ini menampilkan hasil *Clustering* dan *Prediksi Logistic R
 berdasarkan proporsi sekolah SMA/MA dengan akses internet di Indonesia.
 """)
 
-# Merge berdasarkan nama provinsi
-df = df.merge(coord_df, on='Provinsi', how='left')
-
 # Rule-based cluster untuk df utama
 df['Persentase_Tersedia'] = pd.to_numeric(df['Persentase_Tersedia'], errors='coerce')
 df['Cluster_Rule'] = df['Persentase_Tersedia'].apply(lambda x: 0 if pd.notna(x) and x >= 90 else 1)
